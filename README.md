@@ -1,44 +1,44 @@
 # Langfuse Write Proxy
 
-[中文](README.zh-CN.md)
+[English](README.en.md)
 
-**What This Project Is**
+**这个项目是什么**
 
-Langfuse Write Proxy is a lightweight write-only proxy for Langfuse APIs. It allows clients to send observability data to Langfuse while only holding the Langfuse `project public key`, without holding the `project secret key`.
+Langfuse Write Proxy 是一个轻量级的 Langfuse API 只写代理。它允许客户端向 Langfuse 上报观测数据时，只需要持有 Langfuse `项目公钥`，不需要持有 `项目私钥`。
 
-**What Problem It Solves**
+**这个项目解决什么问题**
 
-If the Langfuse project secret key is exposed to a client, the client can do more than send observability data. It can also call Langfuse APIs with that key and browse existing data in the same project.
+如果把 Langfuse 项目私钥暴露给客户端，客户端不只是能上报观测数据，还可以用这组密钥调用 Langfuse API，浏览这个 project 中已经存在的数据。
 
-This project acts like a firewall: clients only send data to the proxy, without touching the real Langfuse API or the real project secret key.
+这个项目相当于一层 firewall：客户端只需要把数据上报到代理，不需要接触真正的 Langfuse API，也不需要接触真实项目私钥。
 
-**How It Works**
+**是如何实现的**
 
-When the proxy receives a client request with a public key and secret key, it uses the public key to find the configured project, ignores the client-provided secret key, and replaces it with the real Langfuse secret key before forwarding.
+代理收到客户端请求带的 public key 和 secret key 时，会先通过 public key 定位到配置中的 project，忽略客户端传来的 secret key，并在转发前替换为真实的 Langfuse secret key。
 
-The design principle is that clients should never contain the real Langfuse secret key. To prevent accidental leakage, for example when an operator forgets to change client configuration and deploys the real secret key to a machine, the proxy rejects requests where the client-provided secret key equals the real Langfuse secret key.
+这个项目的设计原则是：客户端侧不应该出现真实 Langfuse secret key。为避免误泄露，比如运维忘了改客户端配置、误把真实 secret key 下发到机器上，若客户端传来的 secret key 等于真实 Langfuse secret key，代理会拒绝请求。
 
-Only ingestion endpoints are forwarded. Read, query, update, and delete API access is blocked.
+代理只转发上报端点。读取、查询、更新、删除 API 都会被阻断。
 
-The proxy is stateless and can be deployed with horizontal scaling.
+代理本身是无状态的，支持水平扩展部署。
 
-## Allowed Endpoints
+## 允许的端点
 
-The proxy only forwards:
+代理只转发：
 
 ```text
 POST /api/public/otel/v1/traces
-  Current Python SDK and current TS/JS tracing SDKs use this OTEL endpoint.
+  当前 Python SDK 和当前 TS/JS tracing SDK 使用这个 OTEL 端点。
 
 POST /api/public/ingestion
-  Legacy/batch ingestion endpoint. Keep it only if you need old SDKs or custom ingestion clients.
+  Legacy/batch ingestion 端点。只有需要旧 SDK 或自定义 ingestion 客户端时才保留。
 ```
 
-Requests to other `/api/public/*` endpoints are rejected.
+其他 `/api/public/*` 请求都会被拒绝。
 
-## Configuration
+## 配置
 
-The proxy is configured with a YAML file. Each project maps one Langfuse public key to one Langfuse backend and one real Langfuse secret key.
+代理使用 YAML 配置文件。每个 project 对应一个 Langfuse public key、一个 Langfuse 后端和一个真实 Langfuse secret key。
 
 ```yaml
 server:
@@ -68,51 +68,51 @@ projects:
     langfuse_secret_key: "sk-lf-..."
 ```
 
-`langfuse_public_key` values must be unique.
+`langfuse_public_key` 必须唯一。
 
-| YAML field | Required | Default | Description |
+| YAML 字段 | 必填 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `server.listen_addr` | No | `:12000` | HTTP listen address |
-| `server.max_body_bytes` | No | `20971520` | Maximum request body size |
-| `server.read_header_timeout` | No | `30s` | HTTP server read header timeout |
-| `server.idle_timeout` | No | `90s` | HTTP keep-alive idle timeout for client connections |
-| `upstream.max_idle_conns` | No | `200` | Maximum idle connections kept for upstream Langfuse requests |
-| `upstream.max_idle_conns_per_host` | No | `50` | Maximum idle connections kept per upstream host |
-| `upstream.idle_conn_timeout` | No | `90s` | Keep-alive idle timeout for upstream Langfuse connections |
-| `log.dir` | No | `logs` | Directory for daily log files |
-| `log.max_days` | No | `7` | Maximum number of daily log files to keep |
-| `projects[].name` | No | `project-N` | Human-readable project name used in logs and forwarded headers |
-| `projects[].langfuse_base_url` | Yes | | Upstream Langfuse URL, for example `https://langfuse.example.com` |
-| `projects[].langfuse_public_key` | Yes | | Langfuse project public key used to select this project |
-| `projects[].langfuse_secret_key` | Yes | | Langfuse project secret key held by the proxy |
+| `server.listen_addr` | 否 | `:12000` | HTTP 监听地址 |
+| `server.max_body_bytes` | 否 | `20971520` | 最大请求体大小 |
+| `server.read_header_timeout` | 否 | `30s` | HTTP 请求头读取超时 |
+| `server.idle_timeout` | 否 | `90s` | 客户端连接的 HTTP keep-alive 空闲超时 |
+| `upstream.max_idle_conns` | 否 | `200` | 代理访问上游 Langfuse 时最多保留的空闲连接数 |
+| `upstream.max_idle_conns_per_host` | 否 | `50` | 每个上游 host 最多保留的空闲连接数 |
+| `upstream.idle_conn_timeout` | 否 | `90s` | 上游 Langfuse 连接的 keep-alive 空闲超时 |
+| `log.dir` | 否 | `logs` | 每日日志文件目录 |
+| `log.max_days` | 否 | `7` | 最多保留多少天日志 |
+| `projects[].name` | 否 | `project-N` | 用于日志和转发 header 的 project 名称 |
+| `projects[].langfuse_base_url` | 是 | | 上游 Langfuse 地址，例如 `https://langfuse.example.com` |
+| `projects[].langfuse_public_key` | 是 | | 用于选择 project 的 Langfuse public key |
+| `projects[].langfuse_secret_key` | 是 | | 由代理持有的 Langfuse secret key |
 
-## Run Locally
+## 本地运行
 
 ```bash
 cp config.example.yaml config.yaml
 go run . -config config.yaml
 ```
 
-You can also build and run the binary directly:
+也可以直接构建并运行二进制：
 
 ```bash
 go build -o langfuse-write-proxy .
 ./langfuse-write-proxy -config config.yaml
 ```
 
-Build for Linux x64 on Linux/macOS:
+在 Linux/macOS 上编译 Linux x64 版本：
 
 ```bash
 GOOS=linux GOARCH=amd64 go build .
 ```
 
-Build for Linux x64 on Windows cmd:
+在 Windows cmd 上编译 Linux x64 版本：
 
 ```cmd
 set GOOS=linux&& set GOARCH=amd64&& go build .
 ```
 
-For standard Langfuse SDKs that send Basic Auth, configure the SDK with:
+标准 Langfuse SDK 使用 Basic Auth，可这样配置：
 
 ```text
 LANGFUSE_HOST=http://your-proxy:12000
@@ -120,25 +120,25 @@ LANGFUSE_PUBLIC_KEY=<langfuse_public_key>
 LANGFUSE_SECRET_KEY=
 ```
 
-`LANGFUSE_PUBLIC_KEY` must be the real Langfuse public key. `LANGFUSE_SECRET_KEY` should be left empty.
+`LANGFUSE_PUBLIC_KEY` 必须是真实 Langfuse public key。`LANGFUSE_SECRET_KEY` 应该留空。
 
-After starting the proxy, send one trace through it:
+启动代理后，通过示例代码测试 trace 上报：
 
 ```bash
 python test/python/send_langfuse_trace.py --public-key pk-lf-...
 ```
 
-## Developer Automated Test
+## 开发者自动化测试
 
-Create a real `config.yaml`, then run:
+创建真实 `config.yaml` 后运行：
 
 ```bash
 python test/python/test_langfuse_proxy_e2e.py --config config.yaml
 ```
 
-The test starts the Go proxy locally, sends a trace through the Python Langfuse SDK, verifies that read APIs are blocked through the proxy, and queries the configured Langfuse backend to confirm the trace was written.
+测试会启动本地 Go 代理，通过 Python Langfuse SDK 写入一条 trace，验证读 API 被代理阻断，并查询上游 Langfuse 确认 trace 已写入。
 
-If you already built the proxy binary and want the e2e runner to use it:
+如果已经构建好二进制，可以让 e2e 使用它：
 
 ```bash
 python test/python/test_langfuse_proxy_e2e.py --config config.yaml --proxy-command "./langfuse-write-proxy"
@@ -152,11 +152,11 @@ docker build -t langfuse-write-proxy .
 docker run --rm -p 12000:12000 -v "$PWD/config.yaml:/etc/langfuse-write-proxy/config.yaml:ro" langfuse-write-proxy -config /etc/langfuse-write-proxy/config.yaml
 ```
 
-## Health Checks
+## 健康检查
 
 ```text
 GET /healthz
 GET /readyz
 ```
 
-Both return `{"status":"ok"}`.
+都会返回 `{"status":"ok"}`。
