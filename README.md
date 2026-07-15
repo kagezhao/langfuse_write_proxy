@@ -1,10 +1,22 @@
 # Langfuse Write Proxy
 
-Langfuse Write Proxy is a lightweight write-only proxy for Langfuse APIs.
+[中文](README.zh-CN.md)
 
-It allows clients to send diagnostic and observability data to Langfuse without holding a Langfuse Secret Key directly.
+**What This Project Is**
 
-The proxy uses the public key to select the project, ignores the client-provided secret key, and replaces it with the real Langfuse secret key before forwarding. To prevent accidental secret leakage, the proxy rejects requests where the client-provided secret equals the real Langfuse secret key.
+Langfuse Write Proxy is a lightweight write-only proxy for Langfuse APIs. It allows clients to send observability data to Langfuse while only holding the Langfuse `project public key`, without holding the `project secret key`.
+
+**What Problem It Solves**
+
+If the Langfuse project secret key is exposed to a client, the client can do more than send observability data. It can also call Langfuse APIs with that key and browse existing data in the same project.
+
+This project acts like a firewall: clients only send data to the proxy, without touching the real Langfuse API or the real project secret key.
+
+**How It Works**
+
+When the proxy receives a client request with a public key and secret key, it uses the public key to find the configured project, ignores the client-provided secret key, and replaces it with the real Langfuse secret key before forwarding.
+
+The design principle is that clients should never contain the real Langfuse secret key. To prevent accidental leakage, for example when an operator forgets to change client configuration and deploys the real secret key to a machine, the proxy rejects requests where the client-provided secret key equals the real Langfuse secret key.
 
 Only ingestion endpoints are forwarded. Read, query, update, and delete API access is blocked.
 
@@ -30,15 +42,15 @@ The proxy is configured with a YAML file. Each project maps one Langfuse public 
 server:
   listen_addr: ":8080"
   max_body_bytes: 20971520
-  read_header_timeout: 10s
+  read_header_timeout: 30s
 
 projects:
-  - name: customer-a
+  - name: project-a
     langfuse_base_url: "https://langfuse-a.example.com"
     langfuse_public_key: "pk-lf-..."
     langfuse_secret_key: "sk-lf-..."
 
-  - name: customer-b
+  - name: project-b
     langfuse_base_url: "https://langfuse-b.example.com"
     langfuse_public_key: "pk-lf-..."
     langfuse_secret_key: "sk-lf-..."
@@ -50,7 +62,7 @@ projects:
 | --- | --- | --- | --- |
 | `server.listen_addr` | No | `:8080` | HTTP listen address |
 | `server.max_body_bytes` | No | `20971520` | Maximum request body size |
-| `server.read_header_timeout` | No | `10s` | HTTP server read header timeout |
+| `server.read_header_timeout` | No | `30s` | HTTP server read header timeout |
 | `projects[].name` | No | `project-N` | Human-readable project name used in logs and forwarded headers |
 | `projects[].langfuse_base_url` | Yes | | Upstream Langfuse URL, for example `https://langfuse.example.com` |
 | `projects[].langfuse_public_key` | Yes | | Langfuse project public key used to select this project |
@@ -63,6 +75,13 @@ cp config.example.yaml config.yaml
 go run . -config config.yaml
 ```
 
+You can also build and run the binary directly:
+
+```bash
+go build -o langfuse-write-proxy .
+./langfuse-write-proxy -config config.yaml
+```
+
 For standard Langfuse SDKs that send Basic Auth, configure the SDK with:
 
 ```text
@@ -73,7 +92,13 @@ LANGFUSE_SECRET_KEY=
 
 `LANGFUSE_PUBLIC_KEY` must be the real Langfuse public key. `LANGFUSE_SECRET_KEY` should be left empty.
 
-## End-to-End Test
+After starting the proxy, send one trace through it:
+
+```bash
+python test/python/send_langfuse_trace.py --public-key pk-lf-...
+```
+
+## Developer Automated Test
 
 Create a real `config.yaml`, then run:
 
@@ -82,19 +107,6 @@ python test/python/test_langfuse_proxy_e2e.py --config config.yaml
 ```
 
 The test starts the Go proxy locally, sends a trace through the Python Langfuse SDK, verifies that read APIs are blocked through the proxy, and queries the configured Langfuse backend to confirm the trace was written.
-
-You can also test manually after starting the proxy yourself:
-
-```bash
-go build -o langfuse-write-proxy .
-./langfuse-write-proxy -config config.yaml
-```
-
-Then send one trace through the proxy:
-
-```bash
-python test/python/send_langfuse_trace.py --public-key pk-lf-...
-```
 
 If you already built the proxy binary and want the e2e runner to use it:
 

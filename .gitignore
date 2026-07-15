@@ -6,3 +6,4 @@ coverage.out
 config.yaml
 *.exe
 langfuse-write-proxy
+*.pyc

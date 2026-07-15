@@ -4,12 +4,12 @@ server:
   read_header_timeout: 30s
 
 projects:
-  - name: customer-a
+  - name: project-a
     langfuse_base_url: "https://langfuse-a.example.com"
     langfuse_public_key: "pk-lf-..."
     langfuse_secret_key: "sk-lf-..."
 
-  - name: customer-b
+  - name: project-b
     langfuse_base_url: "https://langfuse-b.example.com"
     langfuse_public_key: "pk-lf-..."
     langfuse_secret_key: "sk-lf-..."
