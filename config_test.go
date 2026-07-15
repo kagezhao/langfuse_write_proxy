@@ -8,6 +8,9 @@ server:
   listen_addr: ":9090"
   max_body_bytes: 1048576
   read_header_timeout: 5s
+log:
+  dir: "test-logs"
+  max_days: 3
 projects:
   - name: vm-a
     langfuse_base_url: https://langfuse-a.example.com/
@@ -28,6 +31,12 @@ projects:
 	if cfg.MaxBodyBytes != 1048576 {
 		t.Fatalf("MaxBodyBytes = %d", cfg.MaxBodyBytes)
 	}
+	if cfg.LogDir != "test-logs" {
+		t.Fatalf("LogDir = %q", cfg.LogDir)
+	}
+	if cfg.LogMaxDays != 3 {
+		t.Fatalf("LogMaxDays = %d", cfg.LogMaxDays)
+	}
 	if len(cfg.Projects) != 2 {
 		t.Fatalf("projects = %d", len(cfg.Projects))
 	}
@@ -36,6 +45,24 @@ projects:
 	}
 	if got := cfg.Projects[1].UpstreamURL.String(); got != "https://langfuse-b.example.com/base" {
 		t.Fatalf("project 1 upstream = %q", got)
+	}
+}
+
+func TestLoadYAMLUsesDefaultLogConfig(t *testing.T) {
+	cfg, err := LoadYAML([]byte(`
+projects:
+  - langfuse_base_url: https://langfuse-a.example.com
+    langfuse_public_key: pk-lf-a
+    langfuse_secret_key: sk-lf-a
+`))
+	if err != nil {
+		t.Fatalf("LoadYAML() error = %v", err)
+	}
+	if cfg.LogDir != "logs" {
+		t.Fatalf("LogDir = %q", cfg.LogDir)
+	}
+	if cfg.LogMaxDays != 7 {
+		t.Fatalf("LogMaxDays = %d", cfg.LogMaxDays)
 	}
 }
 

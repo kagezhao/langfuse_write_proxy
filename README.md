@@ -46,6 +46,10 @@ server:
   max_body_bytes: 20971520
   read_header_timeout: 30s
 
+log:
+  dir: "logs"
+  max_days: 7
+
 projects:
   - name: project-a
     langfuse_base_url: "https://langfuse-a.example.com"
@@ -65,6 +69,8 @@ projects:
 | `server.listen_addr` | No | `:12000` | HTTP listen address |
 | `server.max_body_bytes` | No | `20971520` | Maximum request body size |
 | `server.read_header_timeout` | No | `30s` | HTTP server read header timeout |
+| `log.dir` | No | `logs` | Directory for daily log files |
+| `log.max_days` | No | `7` | Maximum number of daily log files to keep |
 | `projects[].name` | No | `project-N` | Human-readable project name used in logs and forwarded headers |
 | `projects[].langfuse_base_url` | Yes | | Upstream Langfuse URL, for example `https://langfuse.example.com` |
 | `projects[].langfuse_public_key` | Yes | | Langfuse project public key used to select this project |

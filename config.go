@@ -14,13 +14,17 @@ import (
 const (
 	defaultListenAddr        = ":12000"
 	defaultMaxBodyBytes      = int64(20 << 20)
-	defaultReadHeaderTimeout = 10 * time.Second
+	defaultReadHeaderTimeout = 30 * time.Second
+	defaultLogDir            = "logs"
+	defaultLogMaxDays        = 7
 )
 
 type Config struct {
 	ListenAddr        string
 	MaxBodyBytes      int64
 	ReadHeaderTimeout time.Duration
+	LogDir            string
+	LogMaxDays        int
 	Projects          []Project
 }
 
@@ -33,6 +37,7 @@ type Project struct {
 
 type fileConfig struct {
 	Server   serverConfig    `yaml:"server"`
+	Log      logConfig       `yaml:"log"`
 	Projects []projectConfig `yaml:"projects"`
 }
 
@@ -40,6 +45,11 @@ type serverConfig struct {
 	ListenAddr        string `yaml:"listen_addr"`
 	MaxBodyBytes      int64  `yaml:"max_body_bytes"`
 	ReadHeaderTimeout string `yaml:"read_header_timeout"`
+}
+
+type logConfig struct {
+	Dir     string `yaml:"dir"`
+	MaxDays int    `yaml:"max_days"`
 }
 
 type projectConfig struct {
@@ -67,6 +77,8 @@ func LoadYAML(data []byte) (Config, error) {
 		ListenAddr:        valueOrDefault(raw.Server.ListenAddr, defaultListenAddr),
 		MaxBodyBytes:      defaultMaxBodyBytes,
 		ReadHeaderTimeout: defaultReadHeaderTimeout,
+		LogDir:            valueOrDefault(raw.Log.Dir, defaultLogDir),
+		LogMaxDays:        defaultLogMaxDays,
 	}
 
 	if raw.Server.MaxBodyBytes > 0 {
@@ -78,6 +90,12 @@ func LoadYAML(data []byte) (Config, error) {
 			return Config{}, errors.New("server.read_header_timeout must be a positive duration")
 		}
 		cfg.ReadHeaderTimeout = d
+	}
+	if raw.Log.MaxDays > 0 {
+		cfg.LogMaxDays = raw.Log.MaxDays
+	}
+	if raw.Log.MaxDays < 0 {
+		return Config{}, errors.New("log.max_days must be a positive integer")
 	}
 
 	if len(raw.Projects) == 0 {

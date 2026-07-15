@@ -46,6 +46,10 @@ server:
   max_body_bytes: 20971520
   read_header_timeout: 30s
 
+log:
+  dir: "logs"
+  max_days: 7
+
 projects:
   - name: project-a
     langfuse_base_url: "https://langfuse-a.example.com"
@@ -65,6 +69,8 @@ projects:
 | `server.listen_addr` | 否 | `:12000` | HTTP 监听地址 |
 | `server.max_body_bytes` | 否 | `20971520` | 最大请求体大小 |
 | `server.read_header_timeout` | 否 | `30s` | HTTP 请求头读取超时 |
+| `log.dir` | 否 | `logs` | 每日日志文件目录 |
+| `log.max_days` | 否 | `7` | 最多保留多少天日志 |
 | `projects[].name` | 否 | `project-N` | 用于日志和转发 header 的 project 名称 |
 | `projects[].langfuse_base_url` | 是 | | 上游 Langfuse 地址，例如 `https://langfuse.example.com` |
 | `projects[].langfuse_public_key` | 是 | | 用于选择 project 的 Langfuse public key |

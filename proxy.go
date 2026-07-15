@@ -9,6 +9,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"time"
 )
 
 var allowedWrites = map[string]struct{}{
@@ -40,9 +41,28 @@ func NewHandler(cfg Config) http.Handler {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+	rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+	projectName := "-"
+	result := "ok"
+	defer func() {
+		log.Printf(
+			"request remote=%q method=%s path=%q status=%d bytes=%d duration_ms=%d project=%q result=%q user_agent=%q",
+			r.RemoteAddr,
+			r.Method,
+			r.URL.RequestURI(),
+			rec.status,
+			rec.bytes,
+			time.Since(start).Milliseconds(),
+			projectName,
+			result,
+			r.UserAgent(),
+		)
+	}()
+
 	switch r.URL.Path {
 	case "/healthz", "/readyz":
-		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
+		writeJSON(rec, http.StatusOK, map[string]string{"status": "ok"})
 		return
 	}
 
@@ -51,27 +71,31 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/public/") {
 			status = http.StatusForbidden
 		}
-		writeJSON(w, status, map[string]string{"error": "endpoint is not allowed"})
+		result = "endpoint is not allowed"
+		writeJSON(rec, status, map[string]string{"error": result})
 		return
 	}
 
 	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method is not allowed"})
+		rec.Header().Set("Allow", http.MethodPost)
+		result = "method is not allowed"
+		writeJSON(rec, http.StatusMethodNotAllowed, map[string]string{"error": result})
 		return
 	}
 
 	project, err := h.authorize(r)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		result = err.Error()
+		writeJSON(rec, http.StatusUnauthorized, map[string]string{"error": result})
 		return
 	}
+	projectName = project.project.Name
 
 	if h.cfg.MaxBodyBytes > 0 {
-		r.Body = http.MaxBytesReader(w, r.Body, h.cfg.MaxBodyBytes)
+		r.Body = http.MaxBytesReader(rec, r.Body, h.cfg.MaxBodyBytes)
 	}
 
-	project.proxy.ServeHTTP(w, r)
+	project.proxy.ServeHTTP(rec, r)
 }
 
 func (h *Handler) authorize(r *http.Request) (*projectHandler, error) {
@@ -166,4 +190,32 @@ func writeJSON(w http.ResponseWriter, status int, payload map[string]string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(payload)
+}
+
+type statusRecorder struct {
+	http.ResponseWriter
+	status      int
+	bytes       int
+	wroteHeader bool
+}
+
+func (r *statusRecorder) WriteHeader(status int) {
+	if r.wroteHeader {
+		return
+	}
+	r.status = status
+	r.wroteHeader = true
+	r.ResponseWriter.WriteHeader(status)
+}
+
+func (r *statusRecorder) Write(b []byte) (int, error) {
+	n, err := r.ResponseWriter.Write(b)
+	r.bytes += n
+	return n, err
+}
+
+func (r *statusRecorder) Flush() {
+	if flusher, ok := r.ResponseWriter.(http.Flusher); ok {
+		flusher.Flush()
+	}
 }

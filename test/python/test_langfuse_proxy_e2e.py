@@ -40,7 +40,7 @@ def main() -> int:
     proc = start_proxy(args.proxy_command, config_path)
     try:
         print(f"waiting for proxy at {proxy_url}", flush=True)
-        wait_for_health(proxy_url)
+        wait_for_health(proxy_url, proc)
         print("proxy is healthy", flush=True)
 
         print("checking that read API is blocked by proxy", flush=True)
@@ -98,18 +98,28 @@ def select_project(cfg: dict, name: str) -> dict:
     raise RuntimeError(f"project {name!r} not found")
 
 
-def wait_for_health(proxy_url: str) -> None:
+def wait_for_health(proxy_url: str, proc: subprocess.Popen) -> None:
     deadline = time.time() + 30
     last_error = None
     while time.time() < deadline:
+        if proc.poll() is not None:
+            dump_proxy_output(proc)
+            raise RuntimeError(f"proxy process exited before becoming healthy, exit_code={proc.returncode}")
+
         try:
             res = requests.get(f"{proxy_url}/healthz", timeout=2)
             if res.status_code == 200:
+                time.sleep(0.2)
+                if proc.poll() is not None:
+                    dump_proxy_output(proc)
+                    raise RuntimeError(f"proxy process exited after health check, exit_code={proc.returncode}")
                 return
             last_error = RuntimeError(f"health status={res.status_code}")
         except Exception as exc:
             last_error = exc
+
         time.sleep(0.5)
+
     raise RuntimeError(f"proxy did not become healthy: {last_error}")
 
 
