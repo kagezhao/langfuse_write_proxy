@@ -20,6 +20,8 @@ The design principle is that clients should never contain the real Langfuse secr
 
 Only ingestion endpoints are forwarded. Read, query, update, and delete API access is blocked.
 
+The proxy is stateless and can be deployed with horizontal scaling.
+
 ## Allowed Endpoints
 
 The proxy only forwards:
