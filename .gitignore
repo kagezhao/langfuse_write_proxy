@@ -1,0 +1,8 @@
+.env
+*.log
+dist/
+bin/
+coverage.out
+config.yaml
+*.exe
+langfuse-write-proxy
