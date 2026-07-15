@@ -40,7 +40,7 @@ projects:
 }
 
 func TestLoadYAMLRequiresProjects(t *testing.T) {
-	_, err := LoadYAML([]byte(`server: { listen_addr: ":8080" }`))
+	_, err := LoadYAML([]byte(`server: { listen_addr: ":12000" }`))
 	if err == nil {
 		t.Fatal("expected missing projects error")
 	}

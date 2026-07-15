@@ -7,7 +7,7 @@ import uuid
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Send one Langfuse trace through a Langfuse host or proxy.")
-    parser.add_argument("--url", default="http://127.0.0.1:8080", help="Langfuse or proxy base URL.")
+    parser.add_argument("--url", default="http://127.0.0.1:12000", help="Langfuse or proxy base URL.")
     parser.add_argument("--public-key", required=True, help="Langfuse public key.")
     parser.add_argument("--secret-key", default="", help="Langfuse secret key. Proxy allows any value except the real secret.")
     parser.add_argument("--name-prefix", default="write-proxy-manual", help="Trace span name prefix.")

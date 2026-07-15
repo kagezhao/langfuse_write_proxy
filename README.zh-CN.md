@@ -42,7 +42,7 @@ POST /api/public/ingestion
 
 ```yaml
 server:
-  listen_addr: ":8080"
+  listen_addr: ":12000"
   max_body_bytes: 20971520
   read_header_timeout: 30s
 
@@ -62,7 +62,7 @@ projects:
 
 | YAML 字段 | 必填 | 默认值 | 说明 |
 | --- | --- | --- | --- |
-| `server.listen_addr` | 否 | `:8080` | HTTP 监听地址 |
+| `server.listen_addr` | 否 | `:12000` | HTTP 监听地址 |
 | `server.max_body_bytes` | 否 | `20971520` | 最大请求体大小 |
 | `server.read_header_timeout` | 否 | `30s` | HTTP 请求头读取超时 |
 | `projects[].name` | 否 | `project-N` | 用于日志和转发 header 的 project 名称 |
@@ -84,10 +84,22 @@ go build -o langfuse-write-proxy .
 ./langfuse-write-proxy -config config.yaml
 ```
 
+在 Linux/macOS 上编译 Linux x64 版本：
+
+```bash
+GOOS=linux GOARCH=amd64 go build .
+```
+
+在 Windows cmd 上编译 Linux x64 版本：
+
+```cmd
+set GOOS=linux&& set GOARCH=amd64&& go build .
+```
+
 标准 Langfuse SDK 使用 Basic Auth，可这样配置：
 
 ```text
-LANGFUSE_HOST=http://your-proxy:8080
+LANGFUSE_HOST=http://your-proxy:12000
 LANGFUSE_PUBLIC_KEY=<langfuse_public_key>
 LANGFUSE_SECRET_KEY=
 ```
@@ -121,7 +133,7 @@ python test/python/test_langfuse_proxy_e2e.py --config config.yaml --proxy-comma
 ```bash
 docker build -t langfuse-write-proxy .
 
-docker run --rm -p 8080:8080 -v "$PWD/config.yaml:/etc/langfuse-write-proxy/config.yaml:ro" langfuse-write-proxy -config /etc/langfuse-write-proxy/config.yaml
+docker run --rm -p 12000:12000 -v "$PWD/config.yaml:/etc/langfuse-write-proxy/config.yaml:ro" langfuse-write-proxy -config /etc/langfuse-write-proxy/config.yaml
 ```
 
 ## 健康检查

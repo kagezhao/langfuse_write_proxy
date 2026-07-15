@@ -1,5 +1,5 @@
 server:
-  listen_addr: ":8080"
+  listen_addr: ":12000"
   max_body_bytes: 20971520
   read_header_timeout: 30s
 

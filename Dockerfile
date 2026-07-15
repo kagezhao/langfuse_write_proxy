@@ -14,5 +14,5 @@ USER appuser
 
 COPY --from=build /out/langfuse-write-proxy /usr/local/bin/langfuse-write-proxy
 
-EXPOSE 8080
+EXPOSE 12000
 ENTRYPOINT ["langfuse-write-proxy"]

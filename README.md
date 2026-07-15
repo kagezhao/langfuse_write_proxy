@@ -42,7 +42,7 @@ The proxy is configured with a YAML file. Each project maps one Langfuse public 
 
 ```yaml
 server:
-  listen_addr: ":8080"
+  listen_addr: ":12000"
   max_body_bytes: 20971520
   read_header_timeout: 30s
 
@@ -62,7 +62,7 @@ projects:
 
 | YAML field | Required | Default | Description |
 | --- | --- | --- | --- |
-| `server.listen_addr` | No | `:8080` | HTTP listen address |
+| `server.listen_addr` | No | `:12000` | HTTP listen address |
 | `server.max_body_bytes` | No | `20971520` | Maximum request body size |
 | `server.read_header_timeout` | No | `30s` | HTTP server read header timeout |
 | `projects[].name` | No | `project-N` | Human-readable project name used in logs and forwarded headers |
@@ -84,10 +84,22 @@ go build -o langfuse-write-proxy .
 ./langfuse-write-proxy -config config.yaml
 ```
 
+Build for Linux x64 on Linux/macOS:
+
+```bash
+GOOS=linux GOARCH=amd64 go build .
+```
+
+Build for Linux x64 on Windows cmd:
+
+```cmd
+set GOOS=linux&& set GOARCH=amd64&& go build .
+```
+
 For standard Langfuse SDKs that send Basic Auth, configure the SDK with:
 
 ```text
-LANGFUSE_HOST=http://your-proxy:8080
+LANGFUSE_HOST=http://your-proxy:12000
 LANGFUSE_PUBLIC_KEY=<langfuse_public_key>
 LANGFUSE_SECRET_KEY=
 ```
@@ -121,7 +133,7 @@ python test/python/test_langfuse_proxy_e2e.py --config config.yaml --proxy-comma
 ```bash
 docker build -t langfuse-write-proxy .
 
-docker run --rm -p 8080:8080 -v "$PWD/config.yaml:/etc/langfuse-write-proxy/config.yaml:ro" langfuse-write-proxy -config /etc/langfuse-write-proxy/config.yaml
+docker run --rm -p 12000:12000 -v "$PWD/config.yaml:/etc/langfuse-write-proxy/config.yaml:ro" langfuse-write-proxy -config /etc/langfuse-write-proxy/config.yaml
 ```
 
 ## Health Checks

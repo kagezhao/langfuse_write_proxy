@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run an end-to-end Langfuse Write Proxy test.")
     parser.add_argument("--config", default=str(ROOT / "config.yaml"), help="Path to proxy YAML config.")
-    parser.add_argument("--proxy-url", default="http://127.0.0.1:8080", help="Local proxy URL.")
+    parser.add_argument("--proxy-url", default="http://127.0.0.1:12000", help="Local proxy URL.")
     parser.add_argument("--project", default="", help="Project name to test. Defaults to the first project.")
     parser.add_argument("--timeout", type=int, default=60, help="Seconds to wait for trace visibility.")
     parser.add_argument(
