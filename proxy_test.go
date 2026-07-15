@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 )
 
 func TestAllowedIngestionIsForwardedWithProjectLangfuseAuth(t *testing.T) {
@@ -226,6 +227,27 @@ func TestRealLangfuseSecretFromClientIsRejected(t *testing.T) {
 
 	if res.Code != http.StatusUnauthorized {
 		t.Fatalf("status = %d, body = %s", res.Code, res.Body.String())
+	}
+}
+
+func TestUpstreamTransportUsesConfiguredKeepAlivePool(t *testing.T) {
+	transport, ok := newUpstreamTransport(Config{
+		UpstreamMaxIdleConns:        123,
+		UpstreamMaxIdleConnsPerHost: 45,
+		UpstreamIdleConnTimeout:     67 * time.Second,
+	}).(*http.Transport)
+	if !ok {
+		t.Fatalf("transport type = %T", transport)
+	}
+
+	if transport.MaxIdleConns != 123 {
+		t.Fatalf("MaxIdleConns = %d", transport.MaxIdleConns)
+	}
+	if transport.MaxIdleConnsPerHost != 45 {
+		t.Fatalf("MaxIdleConnsPerHost = %d", transport.MaxIdleConnsPerHost)
+	}
+	if transport.IdleConnTimeout != 67*time.Second {
+		t.Fatalf("IdleConnTimeout = %s", transport.IdleConnTimeout)
 	}
 }
 

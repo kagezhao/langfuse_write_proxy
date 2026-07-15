@@ -45,6 +45,12 @@ server:
   listen_addr: ":12000"
   max_body_bytes: 20971520
   read_header_timeout: 30s
+  idle_timeout: 90s
+
+upstream:
+  max_idle_conns: 200
+  max_idle_conns_per_host: 50
+  idle_conn_timeout: 90s
 
 log:
   dir: "logs"
@@ -69,6 +75,10 @@ projects:
 | `server.listen_addr` | No | `:12000` | HTTP listen address |
 | `server.max_body_bytes` | No | `20971520` | Maximum request body size |
 | `server.read_header_timeout` | No | `30s` | HTTP server read header timeout |
+| `server.idle_timeout` | No | `90s` | HTTP keep-alive idle timeout for client connections |
+| `upstream.max_idle_conns` | No | `200` | Maximum idle connections kept for upstream Langfuse requests |
+| `upstream.max_idle_conns_per_host` | No | `50` | Maximum idle connections kept per upstream host |
+| `upstream.idle_conn_timeout` | No | `90s` | Keep-alive idle timeout for upstream Langfuse connections |
 | `log.dir` | No | `logs` | Directory for daily log files |
 | `log.max_days` | No | `7` | Maximum number of daily log files to keep |
 | `projects[].name` | No | `project-N` | Human-readable project name used in logs and forwarded headers |

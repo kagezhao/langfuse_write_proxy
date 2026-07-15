@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 func TestLoadYAMLParsesMultipleProjects(t *testing.T) {
 	cfg, err := LoadYAML([]byte(`
@@ -8,6 +11,11 @@ server:
   listen_addr: ":9090"
   max_body_bytes: 1048576
   read_header_timeout: 5s
+  idle_timeout: 45s
+upstream:
+  max_idle_conns: 99
+  max_idle_conns_per_host: 33
+  idle_conn_timeout: 55s
 log:
   dir: "test-logs"
   max_days: 3
@@ -30,6 +38,21 @@ projects:
 	}
 	if cfg.MaxBodyBytes != 1048576 {
 		t.Fatalf("MaxBodyBytes = %d", cfg.MaxBodyBytes)
+	}
+	if cfg.ReadHeaderTimeout != 5*time.Second {
+		t.Fatalf("ReadHeaderTimeout = %s", cfg.ReadHeaderTimeout)
+	}
+	if cfg.ServerIdleTimeout != 45*time.Second {
+		t.Fatalf("ServerIdleTimeout = %s", cfg.ServerIdleTimeout)
+	}
+	if cfg.UpstreamMaxIdleConns != 99 {
+		t.Fatalf("UpstreamMaxIdleConns = %d", cfg.UpstreamMaxIdleConns)
+	}
+	if cfg.UpstreamMaxIdleConnsPerHost != 33 {
+		t.Fatalf("UpstreamMaxIdleConnsPerHost = %d", cfg.UpstreamMaxIdleConnsPerHost)
+	}
+	if cfg.UpstreamIdleConnTimeout != 55*time.Second {
+		t.Fatalf("UpstreamIdleConnTimeout = %s", cfg.UpstreamIdleConnTimeout)
 	}
 	if cfg.LogDir != "test-logs" {
 		t.Fatalf("LogDir = %q", cfg.LogDir)
@@ -63,6 +86,18 @@ projects:
 	}
 	if cfg.LogMaxDays != 7 {
 		t.Fatalf("LogMaxDays = %d", cfg.LogMaxDays)
+	}
+	if cfg.ServerIdleTimeout != 90*time.Second {
+		t.Fatalf("ServerIdleTimeout = %s", cfg.ServerIdleTimeout)
+	}
+	if cfg.UpstreamMaxIdleConns != 200 {
+		t.Fatalf("UpstreamMaxIdleConns = %d", cfg.UpstreamMaxIdleConns)
+	}
+	if cfg.UpstreamMaxIdleConnsPerHost != 50 {
+		t.Fatalf("UpstreamMaxIdleConnsPerHost = %d", cfg.UpstreamMaxIdleConnsPerHost)
+	}
+	if cfg.UpstreamIdleConnTimeout != 90*time.Second {
+		t.Fatalf("UpstreamIdleConnTimeout = %s", cfg.UpstreamIdleConnTimeout)
 	}
 }
 

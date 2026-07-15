@@ -30,6 +30,7 @@ func main() {
 		Addr:              cfg.ListenAddr,
 		Handler:           handler,
 		ReadHeaderTimeout: cfg.ReadHeaderTimeout,
+		IdleTimeout:       cfg.ServerIdleTimeout,
 	}
 
 	log.Printf("langfuse-write-proxy listening on %s, projects=%d log_dir=%s log_max_days=%d", cfg.ListenAddr, len(cfg.Projects), cfg.LogDir, cfg.LogMaxDays)

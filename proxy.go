@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -31,10 +32,11 @@ type projectHandler struct {
 
 func NewHandler(cfg Config) http.Handler {
 	h := &Handler{cfg: cfg}
+	transport := newUpstreamTransport(cfg)
 	for _, project := range cfg.Projects {
 		h.projects = append(h.projects, projectHandler{
 			project: project,
-			proxy:   newReverseProxy(project),
+			proxy:   newReverseProxy(project, transport),
 		})
 	}
 	return h
@@ -150,11 +152,12 @@ func basicAuth(header string) (string, string, bool) {
 	return strings.TrimSpace(username), strings.TrimSpace(password), true
 }
 
-func newReverseProxy(project Project) *httputil.ReverseProxy {
+func newReverseProxy(project Project, transport http.RoundTripper) *httputil.ReverseProxy {
 	upstream := *project.UpstreamURL
 	auth := "Basic " + base64.StdEncoding.EncodeToString([]byte(project.LangfusePublicKey+":"+project.LangfuseSecretKey))
 
 	p := httputil.NewSingleHostReverseProxy(&upstream)
+	p.Transport = transport
 	originalDirector := p.Director
 	p.Director = func(r *http.Request) {
 		originalPath := r.URL.Path
@@ -176,6 +179,21 @@ func newReverseProxy(project Project) *httputil.ReverseProxy {
 	}
 
 	return p
+}
+
+func newUpstreamTransport(cfg Config) http.RoundTripper {
+	return &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		MaxIdleConns:          cfg.UpstreamMaxIdleConns,
+		MaxIdleConnsPerHost:   cfg.UpstreamMaxIdleConnsPerHost,
+		IdleConnTimeout:       cfg.UpstreamIdleConnTimeout,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+	}
 }
 
 func joinUpstreamPath(dst *url.URL, upstreamBasePath string, requestPath string) {

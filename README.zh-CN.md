@@ -45,6 +45,12 @@ server:
   listen_addr: ":12000"
   max_body_bytes: 20971520
   read_header_timeout: 30s
+  idle_timeout: 90s
+
+upstream:
+  max_idle_conns: 200
+  max_idle_conns_per_host: 50
+  idle_conn_timeout: 90s
 
 log:
   dir: "logs"
@@ -69,6 +75,10 @@ projects:
 | `server.listen_addr` | 否 | `:12000` | HTTP 监听地址 |
 | `server.max_body_bytes` | 否 | `20971520` | 最大请求体大小 |
 | `server.read_header_timeout` | 否 | `30s` | HTTP 请求头读取超时 |
+| `server.idle_timeout` | 否 | `90s` | 客户端连接的 HTTP keep-alive 空闲超时 |
+| `upstream.max_idle_conns` | 否 | `200` | 代理访问上游 Langfuse 时最多保留的空闲连接数 |
+| `upstream.max_idle_conns_per_host` | 否 | `50` | 每个上游 host 最多保留的空闲连接数 |
+| `upstream.idle_conn_timeout` | 否 | `90s` | 上游 Langfuse 连接的 keep-alive 空闲超时 |
 | `log.dir` | 否 | `logs` | 每日日志文件目录 |
 | `log.max_days` | 否 | `7` | 最多保留多少天日志 |
 | `projects[].name` | 否 | `project-N` | 用于日志和转发 header 的 project 名称 |
